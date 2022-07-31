@@ -52,6 +52,40 @@ app.post("/send_email", (req, res) => {
       console.log("subject", subject);
       console.log("message", message);
       console.log("attachmentPath", attachmentPath);
+      
+      
+      // After the last console.log(attachmentPath) in the else statement
+      
+      // Connecting to gmail service
+      let transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          type: "OAuth2",
+          user: "your gmail address",
+          pass: "your gmail password",
+          clientId: "your gmail client id",
+          clientSecret: "your gmail client secret token",
+          refreshToken: "gmail refresh token",
+        },
+      });
+      
+      // e-mail option
+      let mailOptions = {
+        from: "your gmail address",
+        to: "your recipient email address",
+        subject: "e-mail subject",
+        text: "e-mail body",
+      };
+      
+      // Method to send e-mail out
+      transporter.sendMail(mailOptions, function (err, data) {
+        if (err) {
+          console.log("Error: " + err);
+        } else {
+          console.log("Email sent successfully");
+        }
+      });
+      
     }
   });
 });
