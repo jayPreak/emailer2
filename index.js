@@ -134,6 +134,6 @@ app.post("/send_email", (req, res) => {
 });
 
 // Express allows us to listen to the port and trigger a console.log() when you visit the port
-app.listen(PORT, () => {
+app.listen(process.env.PORT || PORT, () => {
   console.log(`Server is currently 🏃‍♂️ on port ${PORT}`);
 });
