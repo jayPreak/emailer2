@@ -9,6 +9,11 @@ yarn add dotenv
 yarn add googleapis
 
 
+```
 yarn start
+```
 
+```
+yarn dev
+```
 
