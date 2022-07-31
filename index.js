@@ -7,8 +7,12 @@ const multer = require("multer");
 // Creating an instance of express function
 const app = express();
 
+const dotenv = require('dotenv')
+
 // The port we want our project to run on
 const PORT = 3000;
+
+dotenv.config()
 
 // Express should add our path -middleware
 app.use(express.static("public"));
@@ -31,6 +35,53 @@ const Storage = multer.diskStorage({
 const attachmentUpload = multer({
   storage: Storage,
 }).single("attachment");
+
+
+// Googleapis
+const { google } = require("googleapis");
+
+// Pull out OAuth2 from googleapis
+const OAuth2 = google.auth.OAuth2;
+
+const createTransporter = async () => {
+// 1
+  const oauth2Client = new OAuth2(
+    process.env.OAUTH_CLIENT_ID,
+    process.env.OAUTH_CLIENT_SECRET,
+    "https://developers.google.com/oauthplayground"
+  );
+
+// 2
+  oauth2Client.setCredentials({
+    refresh_token: process.env.OAUTH_REFRESH_TOKEN,
+  });
+
+  const accessToken = await new Promise((resolve, reject) => {
+    oauth2Client.getAccessToken((err, token) => {
+      if (err) {
+        reject("Failed to create access token :( " + err);
+      }
+      resolve(token);
+    });
+  });
+
+// 3
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: process.env.SENDER_EMAIL,
+      accessToken,
+      clientId: process.env.OAUTH_CLIENT_ID,
+      clientSecret: process.env.OAUTH_CLIENT_SECRET,
+      refreshToken: process.env.OAUTH_REFRESH_TOKEN,
+    },
+  });
+
+// 4
+  return transporter;
+};
+
 
 // Root directory -homepage
 app.get("/", (req, res) => {
@@ -94,3 +145,12 @@ app.post("/send_email", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is currently 🏃‍♂️ on port ${PORT}`);
 });
+
+console.log(process.env.MY_NAME_IS) 
+
+
+
+
+//client id : 1096512678170-4ngs516pdusbaiegf0q318uctck02dtg.apps.googleusercontent.com
+//client secret lol : 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
+//refresh token : 1//041f8RBW9VjjSCgYIARAAGAQSNwF-L9Ir0TYMSnJlQ8zGJhcc3vfxZ6qBSwVAw80ANEe5Giz5ZmVmXM-ksFphdWG4JCyTh5q6Vus
