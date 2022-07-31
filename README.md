@@ -1,19 +1,30 @@
-# emailer2
+# emailer4thhhhxd
 
 
+```
 yarn add express
-yarn add --dev nodemon
-yarn add multer
-yarn add nodemailer
-yarn add dotenv
-yarn add googleapis
+```
 
+```
+yarn add --dev nodemon
+```
+
+```
+yarn add multer
+```
+
+```
+yarn add nodemailer
+```
+
+```
+yarn add dotenv
+```
+
+```
+yarn add googleapis
+```
 
 ```
 yarn start
 ```
-
-```
-yarn dev
-```
-
