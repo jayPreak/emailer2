@@ -7,12 +7,11 @@ const multer = require("multer");
 // Creating an instance of express function
 const app = express();
 
-const dotenv = require('dotenv')
+// Import dotenv
+require("dotenv").config();
 
 // The port we want our project to run on
 const PORT = 3000;
-
-dotenv.config()
 
 // Express should add our path -middleware
 app.use(express.static("public"));
@@ -20,6 +19,14 @@ app.use(express.static("public"));
 // Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Nodemailer
+const nodemailer = require("nodemailer");
+
+// Googleapis
+const { google } = require("googleapis");
+// Pull out OAuth from googleapis
+const OAuth2 = google.auth.OAuth2;
 
 // Multer file storage
 const Storage = multer.diskStorage({
@@ -36,22 +43,15 @@ const attachmentUpload = multer({
   storage: Storage,
 }).single("attachment");
 
-
-// Googleapis
-const { google } = require("googleapis");
-
-// Pull out OAuth2 from googleapis
-const OAuth2 = google.auth.OAuth2;
-
 const createTransporter = async () => {
-// 1
+  //Connect to the oauth playground
   const oauth2Client = new OAuth2(
     process.env.OAUTH_CLIENT_ID,
     process.env.OAUTH_CLIENT_SECRET,
     "https://developers.google.com/oauthplayground"
   );
 
-// 2
+  // Add the refresh token to the Oauth2 connection
   oauth2Client.setCredentials({
     refresh_token: process.env.OAUTH_REFRESH_TOKEN,
   });
@@ -59,13 +59,13 @@ const createTransporter = async () => {
   const accessToken = await new Promise((resolve, reject) => {
     oauth2Client.getAccessToken((err, token) => {
       if (err) {
-        reject("Failed to create access token :( " + err);
+        reject("Failed to create access token : error message(" + err);
       }
       resolve(token);
     });
   });
 
-// 3
+  // Authenticating and creating a method to send a mail
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -78,10 +78,8 @@ const createTransporter = async () => {
     },
   });
 
-// 4
   return transporter;
 };
-
 
 // Root directory -homepage
 app.get("/", (req, res) => {
@@ -90,53 +88,47 @@ app.get("/", (req, res) => {
 
 // Route to handle sending mails
 app.post("/send_email", (req, res) => {
-  attachmentUpload(req, res, function (error) {
+  attachmentUpload(req, res, async function (error) {
     if (error) {
-      console.log(err);
       return res.send("Error uploading file");
     } else {
+      // Pulling out the form data from the request body
       const recipient = req.body.email;
-      const subject = req.body.subject;
-      const message = req.body.message;
-      const attachmentPath = req.file.path;
-      console.log("recipient", recipient);
-      console.log("subject", subject);
-      console.log("message", message);
-      console.log("attachmentPath", attachmentPath);
-      
-      
-      // After the last console.log(attachmentPath) in the else statement
-      
-      // Connecting to gmail service
-      let transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          type: "OAuth2",
-          user: "your gmail address",
-          pass: "your gmail password",
-          clientId: "your gmail client id",
-          clientSecret: "your gmail client secret token",
-          refreshToken: "gmail refresh token",
-        },
-      });
-      
-      // e-mail option
+      const mailSubject = req.body.subject;
+      const mailBody = req.body.message;
+      const attachmentPath = req.file?.path;
+
+      // Mail options
       let mailOptions = {
-        from: "your gmail address",
-        to: "your recipient email address",
-        subject: "e-mail subject",
-        text: "e-mail body",
+        from: process.env.SENDER_EMAIL,
+        to: recipient,
+        subject: mailSubject,
+        text: mailBody,
+        attachments: [
+          {
+            path: attachmentPath,
+          },
+        ],
       };
-      
-      // Method to send e-mail out
-      transporter.sendMail(mailOptions, function (err, data) {
-        if (err) {
-          console.log("Error: " + err);
-        } else {
-          console.log("Email sent successfully");
-        }
-      });
-      
+
+      try {
+        // Get response from the createTransport
+        let emailTransporter = await createTransporter();
+
+        // Send email
+        emailTransporter.sendMail(mailOptions, function (error, info) {
+          if (error) {
+            // failed block
+            console.log(error);
+          } else {
+            // Success block
+            console.log("Email sent: " + info.response);
+            return res.redirect("/success.html");
+          }
+        });
+      } catch (error) {
+        return console.log(error);
+      }
     }
   });
 });
@@ -145,12 +137,3 @@ app.post("/send_email", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is currently 🏃‍♂️ on port ${PORT}`);
 });
-
-console.log(process.env.MY_NAME_IS) 
-
-
-
-
-//client id : 1096512678170-4ngs516pdusbaiegf0q318uctck02dtg.apps.googleusercontent.com
-//client secret lol : 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
-//refresh token : 1//041f8RBW9VjjSCgYIARAAGAQSNwF-L9Ir0TYMSnJlQ8zGJhcc3vfxZ6qBSwVAw80ANEe5Giz5ZmVmXM-ksFphdWG4JCyTh5q6Vus
